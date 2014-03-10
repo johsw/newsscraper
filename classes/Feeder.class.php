@@ -68,7 +68,6 @@ Class Feeder {
       'feed_title' => isset($feed_item['title']) ? $feed_item['title'] : '',
       'feed_description' => isset($feed_item['description']) ? $feed_item['description'] : '',
       'feed_pubDate' => isset($feed_item['pubDate']) ? $feed_item['pubDate'] : '',
-      'feed_author' => isset($feed_item['author']) ? $feed_item['author'] : '',
     );
 
     return $article;
