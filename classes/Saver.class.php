@@ -10,7 +10,7 @@ Class Saver {
     if (empty($article)) {
       return;
     }
-    $parsed_url = parse_url($article['link']);
+    $parsed_url = parse_url($article['feed_link']);
     $filename   = str_replace('/', '_', $parsed_url['path']);
     $conf       = $GLOBALS['newsscanner_config'];
     $dir        = $conf['file_storage_location'] . 'feeditems/' . $parsed_url['host'] . '/';

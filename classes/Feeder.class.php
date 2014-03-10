@@ -26,32 +26,43 @@ Class Feeder {
       if ($contents) {
         $xml = simplexml_load_string($contents);
         foreach ($xml->channel->item AS $feed_item) {
-          $feed_item = $this->prepareFeedItemFile((array) $feed_item);
-          $this->saver->createFeedItemFile($feed_item);
+          $prepared_feed_item = $this->prepareFeedItemFile((array) $feed_item);
+          $this->saver->createFeedItemFile($prepared_feed_item);
 
-          $article = $this->prepareArticle($feed_item);
+          $article = $this->prepareArticle($prepared_feed_item);
           $this->saver->createArticle($article);
         };
       }
     }
   }
   private function prepareArticle($feed_item) {
+    date_default_timezone_set('Europe/Copenhagen');
+    $feed_item['pubDate_parsed'] = strtotime($feed_item['pubDate']);
     $feed_item['updated'] = time();
     $feed_item['status'] = 'feed_item';
     return $feed_item;
   }
   private function prepareFeedItemFile($feed_item) {
-
     $url_parts = parse_url($feed_item['link']);
-
-    if (
-      stripos($url_parts['query'], 'rss') !== FALSE ||
-      stripos($url_parts['query'], 'utm_') !== FALSE ||
-      stripos($url_parts['query'], 'feed') !== FALSE
-    ) {
-      unset($url_parts['query']);
+    if (isset($url_parts['query']) && !empty($url_parts['query'])) {
+      if (
+        stripos($url_parts['query'], 'rss') !== FALSE ||
+        stripos($url_parts['query'], 'utm_') !== FALSE ||
+        stripos($url_parts['query'], 'feed') !== FALSE
+      ) {
+        unset($url_parts['query']);
+      }
     }
     $feed_item['link'] = $this->buildUrl($url_parts);
+    if (isset($feed_item['description']) && gettype($feed_item['description']) == 'object') {
+      $feed_item['description'] = $feed_item['description']->__toString();
+    }
+    if (isset($feed_item['pubDate']) && !empty($feed_item['pubDate'])) {
+      $from = array('man', 'tir', 'ons', 'tor', 'fre', 'lør', 'søn');
+      $to = array('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun');
+      $feed_item['pubDate'] = str_ireplace($from, $to, $feed_item['pubDate']);
+
+    }
     $article = array(
       'feed_link' => isset($feed_item['link']) ? $feed_item['link'] : '',
       'feed_title' => isset($feed_item['title']) ? $feed_item['title'] : '',
@@ -59,6 +70,7 @@ Class Feeder {
       'feed_pubDate' => isset($feed_item['pubDate']) ? $feed_item['pubDate'] : '',
       'feed_author' => isset($feed_item['author']) ? $feed_item['author'] : '',
     );
+
     return $article;
   }
   private function buildUrl($parsed_url) {
