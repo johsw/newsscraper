@@ -26,7 +26,7 @@ Class Saver {
 
   public function createArticle($article) {
     $counter = $this->elasticQuery(NULL, 'GET', $this->base64url_encode($article['feed_link']));
-    if (!$counter['data']->found) {
+    if (!isset($counter['data']->found) || !$counter['data']->found) {
       $this->elasticQuery($article, 'POST', $this->base64url_encode($article['feed_link']));
     }
   }
