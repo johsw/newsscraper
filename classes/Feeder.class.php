@@ -21,6 +21,7 @@ Class Feeder {
     }
   }
   public function saveFeedData() {
+    $count = 0;
     foreach ($this->feeds AS $feed_url) {
       $contents = @file_get_contents($feed_url);
       if ($contents) {
@@ -30,10 +31,13 @@ Class Feeder {
           $this->saver->createFeedItemFile($prepared_feed_item);
 
           $article = $this->prepareArticle($prepared_feed_item);
-          $this->saver->createArticle($article);
-        };
+          if ($this->saver->createArticle($article)) {
+            $count++;
+          }
+        }
       }
     }
+    print "Created $count feed-items.\n";
   }
   private function prepareArticle($feed_item) {
     date_default_timezone_set('Europe/Copenhagen');
