@@ -37,7 +37,7 @@ Class Feeder {
   }
   private function prepareArticle($feed_item) {
     date_default_timezone_set('Europe/Copenhagen');
-    $feed_item['pubDate_parsed'] = strtotime($feed_item['pubDate']);
+    $feed_item['pubDate_parsed'] = strtotime($feed_item['feed_pubDate']);
     $feed_item['updated'] = time();
     $feed_item['status'] = 'feed_item';
     return $feed_item;
