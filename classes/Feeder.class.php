@@ -42,6 +42,10 @@ Class Feeder {
   private function prepareArticle($feed_item) {
     date_default_timezone_set('Europe/Copenhagen');
     $feed_item['pubDate_parsed'] = strtotime($feed_item['feed_pubDate']);
+    $url_parts = parse_url($feed_item['feed_link']);
+    if (isset($url_parts['host'])) {
+      $feed_item['domain'] = $url_parts['host'];
+    }
     $feed_item['updated'] = time();
     $feed_item['status'] = 'feed_item';
     return $feed_item;
