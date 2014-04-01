@@ -37,7 +37,7 @@ Class Parser {
             $article->parsed_lead_image_url = $parsed_article->lead_image_url;
             $this->saver->saveFile($article, 'articleparse');
             $this->saver->deleteFile($article, 'feedread');
-            $this->saver->saveFile($article, 'updateArticle');
+            $this->saver->updateArticle($article);
           }
         }
       }
