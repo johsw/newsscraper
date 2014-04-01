@@ -1,25 +1,78 @@
 <?php
 Class Saver {
 
+  public $phases = array();
+
   public function __construct() {
-    //??
+    $this->phases = array(
+      'feedread' => 'feeditems',
+      'articleparse' => 'parsedarticles',
+    );
   }
 
-
-  public function createFeedItemFile($article) {
-    if (empty($article)) {
-      return;
-    }
+  private function isArticleSaved($article) {
+    $conf = $GLOBALS['newsscanner_config'];
     $parsed_url = parse_url($article['feed_link']);
-    $filename   = str_replace('/', '_', $parsed_url['path']);
+    $filename   = $this->generateFilename($parsed_url['path']);
+    foreach ($this->phases AS $phase => $path) {
+      $dir = $conf['file_storage_location'] . $path .'/' . $parsed_url['host'] . '/';
+      $file = $dir . $filename . '.json';
+      if (is_file($file)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
+
+  public function getArticleFromFile($filepath, $phase = 'feedread') {
+    if (is_file($filepath)) {
+      $json = file_get_contents($filepath);
+      if ($json) {
+        $article = json_decode($json);
+        return $article;
+      }
+    }
+    return FALSE;
+  }
+
+  private function generateFilename($path) {
+    return str_replace('/', '_', $path);
+  }
+
+  public function saveFile($article, $phase) {
+    if (is_array($article)) {
+      $article = (object) $article;
+    }
+    $parsed_url = parse_url($article->feed_link);
+    $filename   = $this->generateFilename($parsed_url['path']);
     $conf       = $GLOBALS['newsscanner_config'];
-    $dir        = $conf['file_storage_location'] . 'feeditems/' . $parsed_url['host'] . '/';
+    $dir        = $conf['file_storage_location'] . $this->phases[$phase] . '/' . $parsed_url['host'] . '/';
     if (!is_dir($dir)) {
       mkdir($dir, 0755, TRUE);
     }
     $file = $dir . $filename . '.json';
     if (!is_file($file)) {
       file_put_contents($file, json_encode($article));
+    }
+  }
+
+  public function deleteFile($article, $phase) {
+    $parsed_url = parse_url($article->feed_link);
+    $filename   = $this->generateFilename($parsed_url['path']);
+    $conf       = $GLOBALS['newsscanner_config'];
+    $dir        = $conf['file_storage_location'] . $this->phases[$phase] . '/' . $parsed_url['host'] . '/';
+    $file = $dir . $filename . '.json';
+    if (is_file($file)) {
+      unlink($file);
+    }
+  }
+
+  public function createFeedItemFile($article) {
+    if (empty($article)) {
+      return;
+    }
+    if (!$this->isArticleSaved($article)) {
+      $this->saveFile($article, 'feedread');
     }
   }
 
@@ -31,6 +84,13 @@ Class Saver {
       return TRUE;
     }
     return FALSE;
+  }
+
+  public function updateArticle($article) {
+    if (is_array($article)) {
+      $article = (object) $article;
+    }
+    $this->elasticQuery($article, 'POST', $this->base64url_encode($article->feed_link));
   }
 
 
