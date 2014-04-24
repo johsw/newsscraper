@@ -10,9 +10,12 @@ Class Saver {
     );
   }
 
-  private function isArticleSaved($article) {
+  public function isArticleSaved($url) {
     $conf = $GLOBALS['newsscanner_config'];
-    $parsed_url = parse_url($article['feed_link']);
+    $parsed_url = parse_url($url);
+    if (empty($parsed_url['path'])) {
+      print_r($article); exit;
+    };
     $filename   = $this->generateFilename($parsed_url['path']);
     foreach ($this->phases AS $phase => $path) {
       $dir = $conf['file_storage_location'] . $path .'/' . $parsed_url['host'] . '/';
@@ -22,6 +25,13 @@ Class Saver {
       }
     }
     return FALSE;
+  }
+  public function isArticleIndexed($url) {
+    $counter = $this->elasticQuery(NULL, 'GET', $this->base64url_encode($url));
+    if (!isset($counter['data']->found) || !$counter['data']->found) {
+      return FALSE;
+    }
+    return TRUE;
   }
 
   public function getArticleFromFile($filepath, $phase = 'feedread') {

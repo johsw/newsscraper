@@ -4,43 +4,80 @@ Class Feeder {
 
   public $feeds;
   private $saver;
+  private $logger;
+  private $parser;
+  private $scorer;
 
-  public function __construct($saver) {
-    $this->saver = $saver;
+  public function __construct($di) {
+    if (!isset($di['logger'])) {
+      print "No logger injected";
+      exit;
+    }
+    $this->logger = $di['logger'];
+
+    if (!isset($di['saver'])) {
+      $this->logger->log('No saver injected', E_USER_ERROR, TRUE);
+    }
+    $this->saver = $di['saver'];
+
+    if (!isset($di['parser'])) {
+      $this->logger->log('No parser injected', E_USER_ERROR, TRUE);
+    }
+    $this->parser = $di['parser'];
+
+    if (!isset($di['scorer'])) {
+      $this->logger->log('No scorer injected', E_USER_ERROR, TRUE);
+    }
+    
+    $this->scorer = $di['scorer'];
+
     $handle = fopen("data/feeds.txt", "r");
+    if (!$handle) {
+      $this->logger->log('No valid feeds-list file', E_USER_ERROR, TRUE);
+    }
     $feeds = array();
     if ($handle) {
-        while (($url = fgets($handle)) !== false) {
-          $feeds[] = $url;
-        }
-    } else {
-        // error opening the file.
+      while (($url = fgets($handle)) !== false) {
+        $feeds[] = $url;
+      }
     }
     if (!empty($feeds)) {
       $this->feeds = $feeds;
     }
   }
-  public function saveFeedData() {
+  public function processFeeds() {
     $count = 0;
     foreach ($this->feeds AS $feed_url) {
       $contents = @file_get_contents($feed_url);
+      if (!$contents || empty($contents)) {
+        $this->logger->log('Non-valid or empty feed: ' . $feed_url, E_USER_WARNING);
+      }
       if ($contents) {
         $xml = simplexml_load_string($contents);
+        if (!$xml) {
+          $this->logger->log('Non-valid feed: ' . $feed_url, E_USER_WARNING);
+        }
         foreach ($xml->channel->item AS $feed_item) {
-          $prepared_feed_item = $this->prepareFeedItemFile((array) $feed_item);
-          $this->saver->createFeedItemFile($prepared_feed_item);
-
-          $article = $this->prepareArticle($prepared_feed_item);
-          if ($this->saver->createArticle($article)) {
-            $count++;
+          $feed_item = (array) $feed_item;
+          if (!isset($feed_item['link']) || empty($feed_item['link'])) {
+              $this->logger->log('Non-valid link in: ' . print_r($feed_item, 1), E_USER_WARNING);
+          }
+          if (!$this->saver->isArticleIndexed($feed_item['link']) && !$this->saver->isArticleSaved($feed_item['link'])) {
+            $prepared_feed_item = $this->prepareFeedItemFile((array) $feed_item);
+            $article = $this->prepareArticle($prepared_feed_item);
+            $article = $this->parser->parseArticle($article);
+            $article = $this->scorer->scoreArticle($article);
+            if ($this->saver->createArticle($article)) {
+              $count++;
+            }
           }
         }
       }
     }
-    print "Created $count feed-items.\n";
+    $this->logger->log("Created $count feed-items.", E_USER_NOTICE);
   }
+
   private function prepareArticle($feed_item) {
-    date_default_timezone_set('Europe/Copenhagen');
     $feed_item['pubDate_parsed'] = strtotime($feed_item['feed_pubDate']);
     $url_parts = parse_url($feed_item['feed_link']);
     if (isset($url_parts['host'])) {
@@ -62,6 +99,9 @@ Class Feeder {
       }
     }
     $feed_item['link'] = $this->buildUrl($url_parts);
+    if (empty($feed_item['link'])) {
+      print_r($feed_item); exit;
+    }
     if (isset($feed_item['description']) && gettype($feed_item['description']) == 'object') {
       $feed_item['description'] = $feed_item['description']->__toString();
     }
