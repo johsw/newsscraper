@@ -12,9 +12,13 @@ Class Scorer {
   
   public function scoreArticle($article) {
     $url = $article['feed_link'];
-    $scorer_url = 'http://api.sharedcount.com/';
-    $call = $scorer_url . '?url=' . $url;
-    $json =  @file_get_contents($call);
+    if (!isset($article['feed_link']) || empty($article['feed_link'])) {
+      print_r($article);
+    }
+    $conf  = $GLOBALS['newsscanner_config'];
+    $scorer_url = 'http://free.sharedcount.com/';
+    $call = $scorer_url . '?apikey=' . $conf['sharedcount_api_key'] . '&url=' . urlencode($url);
+    $json =  Fetcher::fetch($call);
 
     if (empty($json)) {
       $this->logger->log('Empty score-response: ' . $call, E_USER_WARNING);

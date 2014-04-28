@@ -29,7 +29,7 @@ switch ($process) {
 
 
   default:
-    $parser = new Parser($di);
+    $parser = new Parser();
     $scorer = new Scorer($di);
     
     $di['parser'] = $parser;

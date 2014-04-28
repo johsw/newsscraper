@@ -10,7 +10,7 @@ Class Saver {
     );
   }
 
-  public function isArticleSaved($url) {
+  public function isArticleArchived($url) {
     $conf = $GLOBALS['newsscanner_config'];
     $parsed_url = parse_url($url);
     if (empty($parsed_url['path'])) {

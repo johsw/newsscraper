@@ -4,36 +4,30 @@ Class Feeder {
 
   public $feeds;
   private $saver;
-  private $logger;
   private $parser;
   private $scorer;
 
   public function __construct($di) {
-    if (!isset($di['logger'])) {
-      print "No logger injected";
-      exit;
-    }
-    $this->logger = $di['logger'];
 
     if (!isset($di['saver'])) {
-      $this->logger->log('No saver injected', E_USER_ERROR, TRUE);
+      Logger::log('No saver injected', E_USER_ERROR, TRUE);
     }
     $this->saver = $di['saver'];
 
     if (!isset($di['parser'])) {
-      $this->logger->log('No parser injected', E_USER_ERROR, TRUE);
+      Logger::log('No parser injected', E_USER_ERROR, TRUE);
     }
     $this->parser = $di['parser'];
 
     if (!isset($di['scorer'])) {
-      $this->logger->log('No scorer injected', E_USER_ERROR, TRUE);
+      Logger::log('No scorer injected', E_USER_ERROR, TRUE);
     }
     
     $this->scorer = $di['scorer'];
 
     $handle = fopen("data/feeds.txt", "r");
     if (!$handle) {
-      $this->logger->log('No valid feeds-list file', E_USER_ERROR, TRUE);
+      Logger::log('No valid feeds-list file', E_USER_ERROR, TRUE);
     }
     $feeds = array();
     if ($handle) {
@@ -51,22 +45,22 @@ Class Feeder {
     $created_count = 0;
     foreach ($this->feeds AS $feed_url) {
       $feed_count++;
-      $contents = $this->getFeedContents($feed_url);
+      $contents = Fetcher::fetch($feed_url);
       if (!$contents || empty($contents)) {
-        $this->logger->log('Non-valid or empty feed: ' . $feed_url, E_USER_WARNING);
+        Logger::log('Non-valid or empty feed: ' . $feed_url, E_USER_WARNING);
       }
       if ($contents) {
         $xml = simplexml_load_string($contents);
         if (!$xml) {
-          $this->logger->log('Non-valid feed: ' . $feed_url, E_USER_WARNING);
+          Logger::log('Non-valid feed: ' . $feed_url, E_USER_WARNING);
         }
         foreach ($xml->channel->item AS $feed_item) {
           $check_count++;
           $feed_item = $this->prepareFeedItemFile($feed_item);
           if (!isset($feed_item['feed_link']) || empty($feed_item['feed_link'])) {
-            $this->logger->log('Non-valid link in: ' . print_r($feed_item, 1), E_USER_WARNING);
+            Logger::log('Non-valid link in: ' . print_r($feed_item, 1), E_USER_WARNING);
           }
-          if (!$this->saver->isArticleIndexed($feed_item['feed_link']) && !$this->saver->isArticleSaved($feed_item['feed_link'])) {
+          if (!$this->saver->isArticleIndexed($feed_item['feed_link']) && !$this->saver->isArticleArchived($feed_item['feed_link'])) {
             $article = $this->prepareArticle($feed_item);
             $article = $this->parser->parseArticle($article);
             $article = $this->scorer->scoreArticle($article);
@@ -77,30 +71,23 @@ Class Feeder {
         }
       }
     }
-    $this->logger->log("Created $created_count feed-items. $check_count items checked. $feed_count feeds.", E_USER_NOTICE);
+    Logger::log("Created $created_count feed-items. $check_count items checked. $feed_count feeds.", E_USER_NOTICE);
   }
   private function getFeedContents($url) {
-    $user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.57 Safari/537.17';
-    $handle = fopen("data/feeds.txt", "r");
-    $feeds = array();
-    if ($handle) {
-      while (($url = fgets($handle)) !== false) {
-
-        $curl_handle = curl_init();
-        curl_setopt($curl_handle, CURLOPT_URL, $url);
-        curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 2);
-        curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl_handle, CURLOPT_USERAGENT, $user_agent);
-        $query = curl_exec($curl_handle);
-        $info = curl_getinfo($curl_handle);
-        curl_close($curl_handle);
-        if ($info['http_code'] != '200' || empty($query)) {
-          $this->logger->log('Non-valid feed: ' . $url, E_USER_WARNING);
-          return FALSE;
-        }
-        return $query;
-      }
+    //$user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.57 Safari/537.17';
+    $curl_handle = curl_init();
+    curl_setopt($curl_handle, CURLOPT_URL, $url);
+    curl_setopt($curl_handle, CURLOPT_CONNECTTIMEOUT, 2);
+    curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, 1);
+    //curl_setopt($curl_handle, CURLOPT_USERAGENT, $user_agent);
+    $query = curl_exec($curl_handle);
+    $info = curl_getinfo($curl_handle);
+    curl_close($curl_handle);
+    if ($info['http_code'] != '200' || empty($query)) {
+      Logger::log('Non-valid feed: ' . $url, E_USER_WARNING);
+      return FALSE;
     }
+    return $query;
   }
   private function prepareArticle($feed_item) {
     $feed_item['pubDate_parsed'] = strtotime($feed_item['feed_pubDate']);
@@ -117,7 +104,7 @@ Class Feeder {
       $feed_item = (array) $feed_item;
     }
     foreach ($feed_item AS $key => $value) {
-      if (!is_string($value)) {
+      if (is_object($value)) {
         $feed_item[$key] = (string) $value;
       }
     }

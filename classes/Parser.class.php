@@ -2,23 +2,15 @@
 
 Class Parser {
   
-  public function __construct($di) {
-    if (!isset($di['logger'])) {
-      print "No logger injected";
-      exit;
-    }
-    $this->logger = $di['logger'];
-  }
-  
   public function parseArticle($article) {
     $url = $article['feed_link'];
     $conf  = $GLOBALS['newsscanner_config'];
     $readability_url = 'https://www.readability.com/api/content/v1/parser';
-    $call = $readability_url . '?url=' . $url . '&token=' . $conf['readability_api_key'];
-    $json =  @file_get_contents($call);
+    $call = $readability_url . '?url=' . urlencode($url) . '&token=' . $conf['readability_api_key'];
+    $json =  Fetcher::fetch($call);
 
     if (empty($json)) {
-      $this->logger->log('Empty parse-response: ' . $call, E_USER_WARNING);
+      Logger::log('Empty parse-response: ' . $call, E_USER_WARNING);
       return FALSE;
     }
     $parsed_article = json_decode($json);
