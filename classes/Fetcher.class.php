@@ -1,7 +1,7 @@
 <?php
 
 Class Fetcher {
-    
+
   public static function fetch($url, $retries = 3, $is_retry = FALSE) {
     static $count;
     if (!$is_retry) {
