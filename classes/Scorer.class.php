@@ -1,15 +1,6 @@
 <?php
 
 Class Scorer {
-  
-  public function __construct($di) {
-    if (!isset($di['logger'])) {
-      print "No logger injected";
-      exit;
-    }
-    $this->logger = $di['logger'];
-  }
-  
   public function scoreArticle($article) {
     $url = $article['feed_link'];
     if (!isset($article['feed_link']) || empty($article['feed_link'])) {
@@ -21,7 +12,7 @@ Class Scorer {
     $json =  Fetcher::fetch($call);
 
     if (empty($json)) {
-      $this->logger->log('Empty score-response: ' . $call, E_USER_WARNING);
+      Logger::log('Empty score-response: ' . $call, E_USER_WARNING);
       return FALSE;
     }
     $scores = json_decode($json);
