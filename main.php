@@ -19,8 +19,12 @@ $process = isset($argv[1]) ? $argv[1] : '';
 switch ($process) {
 
   case 'rescore':
-    $scorer  = new Scorer();
-    $scorer->rescoreArticles();
+
+    $scorer = new Scorer($di);
+    $di['scorer'] = $scorer;
+    $rescorer  = new Rescorer($di);
+    $rescorer->rescoreArticles();
+
     break;
 
   case 'archive':
