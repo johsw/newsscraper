@@ -16,7 +16,7 @@ Class Rescorer {
     $this->scorer = $di['scorer'];
   }
 
-  public function rescoreArticles($article) {
+  public function rescoreArticles() {
     $articles = $this->fetchRescoreArticles();
     foreach ($articles AS $article) {
       $source = (array)$article->_source;
