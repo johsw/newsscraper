@@ -15,7 +15,7 @@ Class Parser {
     }
     $parsed_article = json_decode($json);
     if (!empty($parsed_article)) {
-      $article['parsed_body'] = $parsed_article->content;
+      $article['parsed_body'] = strip_tags($parsed_article->content);
       $article['parsed_title'] = $parsed_article->title;
       $article['parsed_lead_image_url'] = $parsed_article->lead_image_url;
       $article['status'] = 'parsed-article';
