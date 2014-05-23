@@ -134,7 +134,7 @@ Class Feeder {
     $article = array(
       'feed_link' => isset($feed_item['link']) ? $feed_item['link'] : '',
       'feed_title' => isset($feed_item['title']) ? $feed_item['title'] : '',
-      'feed_description' => isset($feed_item['description']) ? $feed_item['description'] : '',
+      'feed_description' => isset($feed_item['description']) ? strip_tags(nl2br($feed_item['description'])) : '',
       'feed_pubDate' => isset($feed_item['pubDate']) ? $feed_item['pubDate'] : '',
     );
 
