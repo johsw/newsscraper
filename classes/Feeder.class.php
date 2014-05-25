@@ -95,7 +95,9 @@ Class Feeder {
     if (isset($url_parts['host'])) {
       $feed_item['domain'] = $url_parts['host'];
     }
+    $feed_item['created'] = time();
     $feed_item['updated'] = time();
+    $feed_item['no_updates'] = 0;
     $feed_item['status'] = 'feed_item';
     return $feed_item;
   }
@@ -134,7 +136,7 @@ Class Feeder {
     $article = array(
       'feed_link' => isset($feed_item['link']) ? $feed_item['link'] : '',
       'feed_title' => isset($feed_item['title']) ? $feed_item['title'] : '',
-      'feed_description' => isset($feed_item['description']) ? strip_tags(nl2br($feed_item['description'])) : '',
+      'feed_description' => isset($feed_item['description']) ? trim(strip_tags(nl2br($feed_item['description']))) : '',
       'feed_pubDate' => isset($feed_item['pubDate']) ? $feed_item['pubDate'] : '',
     );
 

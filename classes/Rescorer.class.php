@@ -22,6 +22,7 @@ Class Rescorer {
       $source = (array)$article->_source;
       $rescored_article = $this->scorer->scoreArticle($source);
       $rescored_article['updated'] = time();
+      $rescored_article['no_updates'] = $source['no_updates'] + 1;
       $this->saver->elasticQuery($rescored_article, 'POST', $article->_id);
     }
   }
