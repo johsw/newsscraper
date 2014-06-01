@@ -63,6 +63,7 @@ Class Feeder {
           if (!$this->saver->isArticleIndexed($feed_item['feed_link']) && !$this->saver->isArticleArchived($feed_item['feed_link'])) {
             $article = $this->prepareArticle($feed_item);
             $article = $this->parser->parseArticle($article);
+            $article = $this->parser->getArticleMetadata($article);
             $article = $this->scorer->scoreArticle($article);
             if ($this->saver->createArticle($article)) {
               $created_count++;
